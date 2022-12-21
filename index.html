@@ -1,0 +1,255 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.1/jquery.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css?family=Poppins" rel="stylesheet">
+  <style type="text/tailwindcss">
+    @layer utilities {
+      body{
+        font-family: 'Poppins';
+      }
+    }
+  </style>
+ 
+</head>
+<body>
+  <h1 class="text-[40px] font-bold text-center mt-5">
+    Bus Station
+  </h1>
+  <div class="flex justify-center">  
+    <div class="my-5 w-72">
+      <label for="default-search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Search</label>
+      <div class="relative">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <svg aria-hidden="true" class="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+          </div>
+          <input type="search" id="default-search" class="block w-full p-4 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Bus Station Name" required>
+          <button  class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" onclick="SearchBus()">Search</button>
+      </div>
+    </div>
+  </div>
+<div id="busListDiv" class="flex flex-wrap space-x-4 justify-center content-center mb-5" >   
+</div> 
+
+  </div>
+ <script>
+  var currentDate = new Date();
+   var bustStationData =  [];    
+   var todayData=[];
+
+   document.addEventListener('DOMContentLoaded', function() {
+       getBusStationAPI();
+        
+}, false); 
+
+function reduceTimer(idName,second)
+{  
+  var distance =parseInt(second); 
+  setInterval(function()
+  {
+      if(distance<0)
+      {
+        document.getElementById(idName).innerText="0 S"; 
+        clearInterval(0);
+      }
+      else
+        document.getElementById(idName).innerText=distance + " S"; 
+    distance=distance-1;
+  },1000);            
+}
+          
+function CreateBusList(busData)
+ {             
+    var cardDiv=document.getElementById("busListDiv");
+    cardDiv.innerHTML='';
+    var busStation=busData.reduce(function(result, current) 
+    {
+              result[current.name] = result[current.name] || [];
+              result[current.name].push(current);
+              return result;
+    }, {});
+        $.each(busStation,function(busStationName,value)
+                      {
+                              var carList=busStation[busStationName].reduce(function(result, current) 
+                              {
+                                result[current.field1] = result[current.field1] || [];
+                                result[current.field1].push(current);
+                                return result;
+                            }, {});                         
+                         
+                            $.each(carList,function(busName,value){
+
+                                  var latestRecord=carList[busName].sort(function (a, b)
+                                  {
+                                      return b.created_at.localeCompare(a.created_at);
+                                  });
+                                  if(latestRecord!=null) 
+                                    {
+                                      var record=latestRecord[0];
+                                      var currentDate=((record.created_at.split('T')[1]).split('Z')[0]).split(':');   
+                                      var second=parseInt(currentDate[2])+parseInt(record.field2);                          
+                                      var minute=parseInt(currentDate[1]);
+                                      var hour=parseInt(currentDate[0]);
+                                      if(second>=60)
+                                      {
+                                        minute=minute+1;  
+                                        second=0;                                 
+                                      }
+
+                                      if(minute>=60)
+                                      {
+                                        hour=hour+1;
+                                        minute=0;
+                                      } 
+                                      CreateBusCard(busName,busStationName,hour+"h " +minute+ "m "+ second+"s",record.field2,record.entry_id);
+                              
+                                    }
+                                  
+                            }); });
+  }
+
+function CreateBusCard(busName,busStationName,depatureTime,toArriveSecond,entry_id)
+{         
+    
+    var cardDiv=document.getElementById("busListDiv"); 
+    var mainDiv=document.createElement('div');  
+     mainDiv.setAttribute('class','px-12 py-5 my-4 bg-white border border-gray-200 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-700');
+    
+    var headerTxt=document.createElement('a');    
+    var h5=document.createElement('h5');
+    h5.setAttribute('class','text-2xl font-bold tracking-tight text-gray-900');
+    h5.innerText="Bus-"+busName;
+    var lb=document.createElement('label');
+    lb.setAttribute('class','text-[15px] text-zinc-400');
+    lb.innerText="Bus Station -"+busStationName;
+    headerTxt.appendChild(h5);
+    headerTxt.appendChild(lb);
+
+   
+    var secondDiv=document.createElement('div');
+    secondDiv.setAttribute('class','flex flex-row content-center mt-4');
+
+    secondDiv.insertAdjacentHTML('beforeend','<div class="flex justify-center w-14 h-14 p-2 bg-white border rounded-full shadow-md  bg-rose-600">\
+         <img src="./assets/bus.svg" width="22" height="22"/>\
+      </div>');
+
+    
+    var arrDiv=document.createElement('div');
+    arrDiv.setAttribute('class','mx-2');
+    var arrTimePara=document.createElement('p');
+    arrTimePara.setAttribute('class','text-[18px] font-semibold');
+    arrTimePara.innerText=depatureTime;
+    arrDiv.appendChild(arrTimePara);
+    arrDiv.insertAdjacentHTML('beforeend','<label class="text-[15px] text-zinc-400">Arraival Time</label>');
+    secondDiv.appendChild(arrDiv);
+      
+
+    //footer div
+    
+    var footerDiv=document.createElement('div');
+    footerDiv.setAttribute('class','flex flex-row justify-center mt-4');
+
+    var footerDiv_2=document.createElement('div');
+    footerDiv_2.setAttribute('class','flex flex-col items-center');
+    footerDiv.appendChild(footerDiv_2);
+
+
+     var toArriveTime=document.createElement('p');
+     toArriveTime.setAttribute('class','text-[24px] font-semibold');
+     var toArriveTimeId='timer'+entry_id;
+     toArriveTime.setAttribute('id',toArriveTimeId);
+     toArriveTime.innerText=toArriveSecond+ " S";
+     footerDiv_2.appendChild(toArriveTime);
+     footerDiv_2.insertAdjacentHTML('beforeend','<label class="text-[15px] text-zinc-400">Time to Arrive</label>');
+    
+    mainDiv.appendChild(headerTxt);
+    mainDiv.appendChild(secondDiv);
+    mainDiv.appendChild(footerDiv);  
+    cardDiv.appendChild(mainDiv); 
+    reduceTimer(toArriveTimeId,toArriveSecond);
+  }
+
+function SearchBus()
+{
+  getBusStationAPI(); 
+   
+}
+
+function getBusStationAPI()
+{     
+  clearInterval(0);
+   setInterval(
+    function(){       
+        var searchTxt=document.getElementById('default-search').value;
+        bustStationData= [
+            {"created_at":"2022-12-19T08:30:56Z",
+             "name": "1",
+            "entry_id":86,
+            "field1":"YGN-1234",
+            "field2":"5",        
+            },
+            {"created_at":"2022-12-20T08:34:57Z",
+             "name": "1",
+            "entry_id":87,
+            "field1":"YGN-1234",
+            "field2":"4",        
+            },
+            {"created_at":"2022-12-14T08:50:53Z",
+             "name": "1",
+            "entry_id":88,
+            "field1":"YGN-34",
+            "field2":"2",        
+            },
+            
+            {"created_at":"2022-12-14T08:30:53Z",
+             "name": "2",
+            "entry_id":89,
+            "field1":"YGN-345",
+            "field2":"5",        
+            },           
+            {"created_at":"2022-12-14T08:30:53Z",
+             "name": "2",
+            "entry_id":90,
+            "field1":"YGN-345",
+            "field2":"4",        
+            },
+            {"created_at":"2022-12-14T08:30:53Z",
+             "name": "2",
+            "entry_id":91,
+            "field1":"YGN-345",
+            "field2":"3",        
+            },
+            {"created_at":"2022-12-14T08:30:53Z",
+             "name": "2",
+            "entry_id":92,
+            "field1":"YGN-345",
+            "field2":"1",        
+            }
+          ];
+        todayData=bustStationData.filter((x)=> Date.parse(x.created_at)>currentDate);
+        if(searchTxt==null || searchTxt=="")
+        {
+            CreateBusList(bustStationData);
+        }
+        else
+        {
+            var filteredList=$.grep(bustStationData, function(b) {
+              return b.name.toLowerCase() === searchTxt.toLowerCase();
+          });     
+          if(filteredList==null){
+            clearInterval(0);
+          }   
+          else  
+             CreateBusList(filteredList);
+        }        
+   },2000);
+        // const response = await fetch('https://api.thingspeak.com/channels/1979640/feeds.json?results=2');
+        // bustStationData= await response.json(); //extract JSON from the http response
+        // console.log(bustStationData.channel);
+}  
+ </script>
+</body>
+</html>
